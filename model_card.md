@@ -1,72 +1,52 @@
-# 🎧 Model Card: Music Recommender Simulation
+# 🃏 Model Card — VibeFinder 1.0
 
-## 1. Model Name  
+## Model Name
+VibeFinder 1.0 — Agentic Music Recommender Simulation
 
-VibeMetric 1.0
----
+## Goal / Task
+Suggest the top 5 songs from a catalog that best match a user's musical taste profile, using a weighted scoring algorithm. The agent monitors result quality and retries with adjusted preferences if confidence is low.
 
-## 2. Intended Use  
+## Data Used
+- **Source:** `data/songs.csv` (manually curated)
+- **Size:** 18 songs
+- **Features:** genre, mood, energy, tempo_bpm, valence, danceability, acousticness, instrumentalness, liveness
+- **Limits:** Small dataset; pop and lofi genres are overrepresented (6 of 18 songs)
 
-Describe what your recommender is designed to do and who it is for. 
+## Algorithm Summary
+1. For each song, calculate a score out of ~100 points:
+   - +12.5 for genre match
+   - +15.0 for mood match
+   - Up to 16 points for energy similarity (closest = full points)
+   - Up to 8 points each for acousticness and instrumentalness
+   - Smaller weights for valence, danceability, liveness, tempo
+2. Sort all songs by score, return top 5
+3. Agent checks if top score ≥ 60. If not, adjusts energy toward middle, then drops genre/mood filter, and retries up to 3 times.
 
-This recommender is a classroom exploration tool designed to suggest songs based on a user's specific "vibe" (genre, mood, and energy). It assumes the user has clear preferences and is looking for songs within a small, curated catalog. It is not intended for real-world commercial use but rather to demonstrate how weighted scoring logic impacts discovery.
+## Observed Behavior / Biases
+- **Genre dominance:** Even after halving genre weight to 12.5, genre match still heavily influences rankings because mood match adds another 15 points — songs matching both genre and mood almost always win.
+- **Filter bubble:** With only 18 songs, users with niche preferences (metal, blues) get poor results since the dataset has only 1–2 songs per genre.
+- **Adversarial failure:** Profiles with impossible preferences (tempo > 170 BPM, non-existent moods) always score below threshold. The reflect mechanism cannot fix what the data doesn't contain.
 
----
+## Evaluation Process
+Tested with 3 distinct user profiles:
+- **Chill Lofi** — passed on iteration 1, top score 76.4
+- **High Energy Pop** — passed on iteration 1, top score 75.0
+- **Adversarial Edge Case** — failed all 3 iterations, top score 37.4
 
-## 3. How the Model Works  
+The adversarial profile correctly demonstrated that the agent honestly reports low confidence rather than returning misleading results.
 
-Explain your scoring approach in simple language.  
+**EDM vs Acoustic comparison:** A high-energy electronic profile (energy: 0.9, acousticness: 0.05) ranked Digital Tension and Gym Hero at top. An acoustic profile (energy: 0.35, acousticness: 0.90) ranked Library Rain and Spacewalk Thoughts at top. This confirms the energy and acousticness features are working correctly to differentiate musical vibes.
 
-The model uses a Weighted Scoring System. It looks at song attributes like genre, mood, and numerical values like energy, acousticness, and tempo.
+## Intended Use
+- Educational simulation to demonstrate content-based filtering and agentic AI patterns
+- Portfolio project showing AI system design with evaluation loops
 
-Match Points: It gives a large point "bonus" if the song’s genre or mood exactly matches the user's preference.
+## Non-Intended Use
+- Not suitable as a real music recommendation platform
+- Should not be used with real user listening data without privacy review
+- Not designed for production deployment
 
-Similarity Points: For numerical values like energy, it calculates the "gap" between the user's target and the song's actual value. The smaller the gap, the more points the song earns.
-
-Final Ranking: It adds all these points together to create a score out of 100 and sorts the songs from highest to lowest.
----
-
-## 4. Data  
-
-The catalog consists of 18 songs. The dataset is skewed toward Lofi (16.7%) and Pop (11.1%), while other genres like Metal or Reggae only have one song each. The energy levels in the dataset are clustered between 0.28 and 0.94, meaning there is a complete lack of "ultra-chill" music below 0.28.
----
-
-## 5. Strengths  
-
-Where does your system seem to work well  
-
-The system works very well for users with "mainstream" or "middle-of-the-road" tastes. If a user likes Lofi or Pop with moderate energy levels, the system provides several highly accurate and relevant matches that feel intuitive and correct.
-
----
-
-## 6. Limitations and Bias 
-
-Where the system struggles or behaves unfairly. 
-
-The system suffers from a significant "Genre Filter Bubble" due to the high original weight (+25) for genre matches, which forces users into narrow categories and prevents cross-genre discovery. Furthermore, there is a "Neutrality Bias" in the energy gap calculation; because the dataset lacks songs with extreme values (below 0.28), users seeking very chill music are mathematically penalized compared to users with moderate preferences. Finally, the exact-match logic for moods creates a "Binary Limitation," where semantically similar moods like 'Chill' and 'Relaxed' receive no shared credit, leading to rigid and often repetitive recommendations.
-
----
-
-## 7. Evaluation  
-
-How you checked whether the recommender behaved as expected. 
-
-I tested the system using three distinct profiles: "Lofi Study" (Low Energy/Lofi), "High-Energy Metal" (High Energy/Metal), and "Mainstream Pop" (Medium Energy/Pop). A surprising result was that the "Lofi Study" profile was significantly easier for the system to satisfy because 16.7% of the dataset is Lofi, whereas the "Metal" user was repeatedly suggested the same single song due to low dataset diversity. My experiment of halving the genre weight proved that the system can become more "vibe-focused," but it cannot fully overcome the underlying imbalance of the song catalog.
----
-
-## 8. Future Work  
-
-Ideas for how you would improve the model next.  
-
-Dynamic Dataset Balancing: Add more songs to underrepresented genres to break the "single-song" trap.
-
-Fuzzy Mood Matching: Instead of an "all or nothing" score for moods, I would create groups (e.g., 'Chill' and 'Relaxed' share points) to improve variety.
-
-Non-Linear Scoring: Adjust the energy gap math so it doesn't unfairly punish users who want extreme "edge case" music.
----
-
-## 9. Personal Reflection  
-
-A few sentences about your experience.  
-
-My biggest learning moment was discovering the "Extreme Value Penalty"—realizing that my math accidentally punished people with strong tastes just because the data didn't perfectly match their 0.1 or 0.9 energy preference. AI tools were incredibly helpful for generating additional CSV data and explaining the math behind the scores, but I had to double-check the AI's logic when it suggested weight changes that would have made the genre match too powerful. I was surprised by how a few lines of addition and subtraction can make a computer "feel" like it understands my musical taste, even though it's just calculating distances between numbers. This project made me realize that the "algorithms" we complain about on TikTok or Spotify are essentially just a series of human-weighted decisions.
+## Ideas for Improvement
+1. **Expand the dataset** to 100+ songs across all genres to reduce filter bubbles
+2. **Add collaborative filtering** — incorporate what similar users liked
+3. **Dynamic threshold** — adjust the 60-point threshold based on dataset size and genre coverage
