@@ -26,6 +26,7 @@ This makes the system behave more like a real AI agent that is aware of its own 
 ---
 
 ## 🏗️ Architecture Overview
+![System Diagram](assets/system_diagram.png)
 User Preferences
 │
 ▼
